@@ -100,6 +100,17 @@ async fn run(config: LspConfig) -> Result<()> {
     for lang in &config.languages {
         // spawn LSP server command
         let mut cmd = Command::new(&lang.command);
+        
+        cmd.env("HTTP_PROXY", "http://127.0.0.1:8888");
+        cmd.env("HTTPS_PROXY", "http://127.0.0.1:8888");
+
+        // https://hayageek.com/disable-ssl-verification-in-node-js/
+        // process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+        // https://nodejs.org/api/cli.html#node_tls_reject_unauthorizedvalue
+        // NODE_TLS_REJECT_UNAUTHORIZED=value#
+        // If value equals '0', certificate validation is disabled for TLS connections. This makes TLS, and HTTPS by extension, insecure. The use of this environment variable is strongly discouraged.
+        cmd.env("NODE_TLS_REJECT_UNAUTHORIZED", "0");
+
         cmd.args(&lang.args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped());
@@ -165,11 +176,15 @@ async fn run(config: LspConfig) -> Result<()> {
 #[command(version)]
 struct Cli {
     /// Configuration file path
-    #[arg(short = 'c', long)]
+    #[arg(short = 'c', long, default_value="/etc/lsp-proxy.toml")]
     config: PathBuf,
     /// Select language servers by programming language name
-    #[arg(short = 'l', long)]
+    #[arg(short = 'l', long, default_value="go")]
     language: Option<String>,
+
+
+    #[arg(long)]
+    stdio: bool,
 }
 
 #[tokio::main]
